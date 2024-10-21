@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"math"
 	"net/http"
@@ -154,6 +153,7 @@ func GetFood() gin.HandlerFunc {
 func CreateFood() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+		defer cancel()
 		var menu models.Menu
 		var food models.Food
 		// The validator package allows you to define rules for each field in your structs. For example, you can specify that a certain field must be a valid email address, must not be empty, must be a specific length, etc. This is done using struct tags.
@@ -184,8 +184,7 @@ func CreateFood() gin.HandlerFunc {
 		err := menuCollection.FindOne(ctx, bson.M{"menu_id": food.Menu_id}).Decode(&menu)
 		defer cancel()
 		if err != nil {
-			msg := fmt.Sprintf("menu was not found")
-			c.JSON(http.StatusInternalServerError, gin.H{"error": msg})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "menu was not found"})
 			return
 		}
 		food.Created_at, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
@@ -200,9 +199,7 @@ func CreateFood() gin.HandlerFunc {
 
 		result, insertErr := foodCollection.InsertOne(ctx, food)
 		if insertErr != nil {
-			msg := fmt.Sprintf("Food item was not created")
 			c.JSON(http.StatusInternalServerError, gin.H{"error": insertErr.Error()})
-			fmt.Println(msg)
 			return
 		}
 		defer cancel()
@@ -225,6 +222,7 @@ func toFixed(num float64, precision int) float64 {
 func UpdateFood() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+		defer cancel()
 		var menu models.Menu
 		var food models.Food
 
@@ -266,8 +264,7 @@ func UpdateFood() gin.HandlerFunc {
 
 			defer cancel()
 			if err != nil {
-				msg := fmt.Sprintf("menu was not found")
-				c.JSON(http.StatusInternalServerError, gin.H{"error": msg})
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "menu was not found"})
 				return
 			}
 
@@ -305,8 +302,7 @@ func UpdateFood() gin.HandlerFunc {
 			&opt,
 		)
 		if err != nil {
-			msg := fmt.Sprintf("Food item update failed")
-			c.JSON(http.StatusInternalServerError, gin.H{"error": msg})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Food item update failed"})
 		}
 
 		c.JSON(http.StatusOK, result)

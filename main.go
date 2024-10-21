@@ -3,8 +3,8 @@ package main
 import (
 	"os"
 	"restaurant-management-system/database"
-	"restaurant-management-system/middleware"
-	"restaurant-management-system/routes"
+	middleware "restaurant-management-system/middleware"
+	routes "restaurant-management-system/routes"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -33,7 +33,7 @@ func main() {
 	// gin.Logger() is a built-in middleware provided by the Gin framework. It logs details about each HTTP request the router receives and the corresponding response. This helps in debugging and monitoring the behavior of your application
 	// gin.Logger() logs important information like HTTP methods, paths, response status codes, client IP addresses, and request processing time.
 	router.Use(gin.Logger())
-	router.UserRoutes(router)
+	routes.UserRoutes(router)
 	// used to attach custom authentication middleware to your Gin router. Middleware in Gin acts like a filter that processes every request before it reaches your route handlers. This particular middleware is for authentication, ensuring that only users who are authenticated (logged in or have valid credentials) can access certain routes.
 	router.Use(middleware.Authentication())
 

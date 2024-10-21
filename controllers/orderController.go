@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net/http"
 	"restaurant-management-system/database"
@@ -58,7 +57,9 @@ func GetOrder() gin.HandlerFunc {
 func CreateOrder() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+		defer cancel()
 		var order models.Order
+		var table models.Table
 		var validate = validator.New()
 
 		if err := c.BindJSON(&order); err != nil {
@@ -76,8 +77,7 @@ func CreateOrder() gin.HandlerFunc {
 			err := tableCollection.FindOne(ctx, bson.M{"table_id": order.Table_ID}).Decode(&table)
 			defer cancel()
 			if err != nil {
-				msg := fmt.Sprintf("Table was not found")
-				c.JSON(http.StatusInternalServerError, gin.H{"error": msg})
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Table was not found"})
 				return
 			}
 		}
@@ -90,9 +90,9 @@ func CreateOrder() gin.HandlerFunc {
 		result, err := menuCollection.InsertOne(ctx, order)
 
 		if err != nil {
-			msg := fmt.Sprintf("order item was not created")
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			fmt.Println(msg)
+			msg := "order item was not created"
+			c.JSON(http.StatusInternalServerError, gin.H{"error": msg})
+
 			return
 		}
 
@@ -109,6 +109,7 @@ func CreateOrder() gin.HandlerFunc {
 func UpdateOrder() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+		defer cancel()
 		var order models.Order
 		var table models.Table
 
@@ -127,7 +128,7 @@ func UpdateOrder() gin.HandlerFunc {
 
 			defer cancel()
 			if err != nil {
-				msg := fmt.Sprintf("Table was not found")
+				msg := "Table was not found"
 				c.JSON(http.StatusInternalServerError, gin.H{"error": msg})
 				return
 			}
@@ -153,7 +154,7 @@ func UpdateOrder() gin.HandlerFunc {
 			&opt,
 		)
 		if err != nil {
-			msg := fmt.Sprintf("Order update failed")
+			msg := "Order update failed"
 			c.JSON(http.StatusInternalServerError, gin.H{"error": msg})
 		}
 

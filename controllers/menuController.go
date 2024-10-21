@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net/http"
 	"restaurant-management-system/database"
@@ -53,6 +52,7 @@ func GetMenu() gin.HandlerFunc {
 func CreateMenu() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+		defer cancel()
 		var menu models.Menu
 		var validate = validator.New()
 
@@ -78,9 +78,9 @@ func CreateMenu() gin.HandlerFunc {
 		result, err := menuCollection.InsertOne(ctx, menu)
 
 		if err != nil {
-			msg := fmt.Sprintf("Food item was not created")
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			fmt.Println(msg)
+
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "food item was not created"})
+
 			return
 		}
 
@@ -97,7 +97,7 @@ func CreateMenu() gin.HandlerFunc {
 //The end must be later than the start (valid duration
 // This is for future editing
 
-func inTimeSpan(start, end, check time.Time) bool {
+func inTimeSpan(start, end time.Time) bool {
 	return start.After(time.Now()) && end.After(start)
 }
 
@@ -105,6 +105,7 @@ func UpdateMenu() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
 		var menu models.Menu
+		defer cancel()
 
 		if err := c.BindJSON(&menu); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -123,7 +124,7 @@ func UpdateMenu() gin.HandlerFunc {
 			// : Let's say you have a menu for a special event that is available from October 1, 2024 to October 10, 2024.
 			// Current Date: Imagine today is October 15, 2024.// focus on msg
 
-			if !inTimeSpan(*menu.Start_date, *menu.End_date, time.Now()) {
+			if !inTimeSpan(*menu.Start_date, *menu.End_date) {
 				msg := "kindly retype the time"
 				c.JSON(http.StatusInternalServerError, gin.H{"error": msg})
 				defer cancel()

@@ -113,13 +113,11 @@ func GetOrderItem() gin.HandlerFunc {
 	}
 }
 
-
-
 // this will hold the list of order items as documents retrieved from MongoDB.
 
 func ItemsByOrder(id string) (orderItems []primitive.M, err error) {
 	var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
-  
+
 	// $match: The $match is like a filter in a search. In this case, were saying, "Hey MongoDB, find documents (which are like rows in SQL databases) where the order_id equals the id that we passed into the function
 	matchStage := bson.D{{Key: "$match", Value: bson.D{{Key: "order_id", Value: id}}}}
 	//Its purpose is to join two collections in MongoDB, much like how a SQL JOIN works.
@@ -130,41 +128,39 @@ func ItemsByOrder(id string) (orderItems []primitive.M, err error) {
 	// as: "food"  This is the name of the new field that will hold the matched data from the food collection. After the lookup, each order item will have a new field called food, which contains details about the food item (like its name, price, etc.).
 	// Before lookupStage:
 
-// You just have:
+	// You just have:
 
-// [
-//   { "order_id": "123", "food_id": "001", "quantity": 2 },
-// 	  { "order_id": "123", "food_id": "002", "quantity": 1 }
-// ]
+	// [
+	//   { "order_id": "123", "food_id": "001", "quantity": 2 },
+	// 	  { "order_id": "123", "food_id": "002", "quantity": 1 }
+	// ]
 
 	// This only tells you the food_id and quantity, but not much else.
 
 	// After lookupStage:
- 
+
 	// [
-  	// {
-    // "order_id": "123",
-    // "food_id": "001",
-    // "quantity": 2,
-    // "food": {
-      // 	"name": "Pizza",
-      // 	"price": 10.0,
-      // 	"food_image": "pizza.jpg"
-    // }
-  // },
-  // {
-    // "order_id": "123",
-    // "food_id": "002",
-    // "quantity": 1,
-    // "food": {
-      // "name": "Burger",
-      // "price": 5.0,
-      // "food_image": "burger.jpg"
-    // }
-  // }
-// ]
-
-
+	// {
+	// "order_id": "123",
+	// "food_id": "001",
+	// "quantity": 2,
+	// "food": {
+	// 	"name": "Pizza",
+	// 	"price": 10.0,
+	// 	"food_image": "pizza.jpg"
+	// }
+	// },
+	// {
+	// "order_id": "123",
+	// "food_id": "002",
+	// "quantity": 1,
+	// "food": {
+	// "name": "Burger",
+	// "price": 5.0,
+	// "food_image": "burger.jpg"
+	// }
+	// }
+	// ]
 
 	lookupStage := bson.D{{Key: "$lookup", Value: bson.D{{Key: "from", Value: "food"}, {Key: "localField", Value: "food_id"}, {Key: "foreignField", Value: "food_id"}, {Key: "as", Value: "food"}}}}
 	// $unwind takes an array from a document and splits it into separate documents for each item in that array.
@@ -177,40 +173,38 @@ func ItemsByOrder(id string) (orderItems []primitive.M, err error) {
 	// Before unwindStage:
 
 	// {
-   // "order_id": 1,
-    // "customer_name": "Alice",
-    // "food_ids": ["f1", "f2"],
-    // "food_items": [
-        // { "food_id": "f1", "name": "Pizza" },
-        // { "food_id": "f2", "name": "Burger" }
-    // ]
-// }
+	// "order_id": 1,
+	// "customer_name": "Alice",
+	// "food_ids": ["f1", "f2"],
+	// "food_items": [
+	// { "food_id": "f1", "name": "Pizza" },
+	// { "food_id": "f2", "name": "Burger" }
+	// ]
+	// }
 
-// After unwindStage:
+	// After unwindStage:
 
-// {
+	// {
 	// "order_id": 1,
 	// "customer_name": "Alice",
 	// "food_ids": ["f1", "f2"],
 	// "food_items": { "food_id": "f1", "name": "Pizza" }
-// }
+	// }
 
-// {
+	// {
 	// "order_id": 1,
 	// "customer_name": "Alice",
 	// "food_ids": ["f1", "f2"],
 	// "food_items": { "food_id": "f2", "name": "Burger" }
-// }
+	// }
 
-// The primary purpose of the $unwind stage in MongoDB is to deconstruct an array field from the input documents. This means that if you have a document containing an array, $unwind will create a new document for each element in that array, effectively "flattening" it
+	// The primary purpose of the $unwind stage in MongoDB is to deconstruct an array field from the input documents. This means that if you have a document containing an array, $unwind will create a new document for each element in that array, effectively "flattening" it
 
-// Simply ANTI-ARRAY :- Benefit: This allows for easier manipulation and querying of individual array elements in MongoDB.
+	// Simply ANTI-ARRAY :- Benefit: This allows for easier manipulation and querying of individual array elements in MongoDB.
 
-//  preserveNullAndEmptyArrays: true ensures that documents with null values or empty arrays for the field being unwound are not excluded from the results. Instead, they will appear in the output, but the unwound field will have a null value.
-
+	//  preserveNullAndEmptyArrays: true ensures that documents with null values or empty arrays for the field being unwound are not excluded from the results. Instead, they will appear in the output, but the unwound field will have a null value.
 
 	unwindStage := bson.D{{Key: "$unwind", Value: bson.D{{Key: "path", Value: "$food"}, {Key: "preserveNullAndEmptyArrays", Value: true}}}}
- 
 
 	// Seek Mock Data Example if confused
 	// Purpose of the as Key:
@@ -223,7 +217,7 @@ func ItemsByOrder(id string) (orderItems []primitive.M, err error) {
 	// The $lookup only brings in data from the order collection based on the matching order_id.
 	// It does not include fields from the food collection in the result of the lookup because that part is handled separately in your pipeline.
 
-	// We are concerned with key as it's value   
+	// We are concerned with key as it's value
 	lookupOrderStage := bson.D{{Key: "$lookup", Value: bson.D{{Key: "from", Value: "order"}, {Key: "localField", Value: "order_id"}, {Key: "foreignField", Value: "order_id"}, {Key: "as", Value: "order"}}}}
 	unwindOrderStage := bson.D{{Key: "$unwind", Value: bson.D{{Key: "path", Value: "$order"}, {Key: "preserveNullAndEmptyArrays", Value: true}}}}
 
@@ -249,6 +243,8 @@ func ItemsByOrder(id string) (orderItems []primitive.M, err error) {
 			{Key: "quantity", Value: 1},
 		}}}
 
+	// The aggregation groups the documents based on both the order_id and table_number. This means that if multiple items belong to the same order (i.e., they have the same order_id) and were placed at the same table (i.e., they have the same table_number), they will be grouped together in a single result.
+
 	groupStage := bson.D{{Key: "$group", Value: bson.D{
 		{Key: "_id", Value: bson.D{
 			{Key: "order_id", Value: "$order_id"},
@@ -263,6 +259,12 @@ func ItemsByOrder(id string) (orderItems []primitive.M, err error) {
 		{Key: "total_amount", Value: bson.D{{Key: "$sum", Value: "$amount"}}},
 	}}}
 
+	//  In this code, the projectStage2 is applying a projection on the results that were produced by the previous groupStage.
+
+	// The earlier stage typically comes early in the pipeline, before the data is grouped. It helps to reduce the amount of data that is processed by focusing only on the fields you actually need.
+
+	// This second projection stage is used to restructure the grouped results and prepare the final output
+
 	projectStage2 := bson.D{
 		{Key: "$project", Value: bson.D{
 			{Key: "id", Value: 0},
@@ -272,6 +274,7 @@ func ItemsByOrder(id string) (orderItems []primitive.M, err error) {
 			{Key: "total_count", Value: 1},
 		}}}
 
+	//  the MongoDB aggregation pipeline is executed in sequence, with each stage processing the output of the previous one. This means the order of the stages is very important because each stage depends on the results from the stages before it.
 	cursor, err := orderItemCollection.Aggregate(ctx, mongo.Pipeline{
 		matchStage,
 		lookupStage,
@@ -316,6 +319,7 @@ func ItemsByOrder(id string) (orderItems []primitive.M, err error) {
 func CreateOrderItem() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+		defer cancel()
 		var order models.Order
 		var orderItemPack OrderItemPack
 		var validate = validator.New()
@@ -370,6 +374,7 @@ func CreateOrderItem() gin.HandlerFunc {
 func UpdateOrderItem() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+		defer cancel()
 		var orderItem models.OrderItem
 		orderItemId := c.Param("order_item_id")
 
